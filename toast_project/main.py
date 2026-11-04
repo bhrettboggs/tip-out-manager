@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Form, HTTPException, Depends, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Text
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Text, text
 from sqlalchemy.orm import sessionmaker, Session, relationship, declarative_base
 from datetime import datetime
 import json
@@ -138,12 +138,13 @@ def migrate_existing_data(db: Session):
         # First, check if we need to add the server_employee_id column
         try:
             # Try to query the column - if it fails, we need to add it
-            db.execute("SELECT server_employee_id FROM tipouts LIMIT 1")
+            db.execute(text("SELECT server_employee_id FROM tipouts LIMIT 1"))
             print("server_employee_id column already exists")
         except Exception:
             # Column doesn't exist, add it
+            db.rollback()
             print("Adding server_employee_id column to tipouts table")
-            db.execute("ALTER TABLE tipouts ADD COLUMN server_employee_id INTEGER")
+            db.execute(text("ALTER TABLE tipouts ADD COLUMN server_employee_id INTEGER"))
             db.commit()
             print("server_employee_id column added successfully")
         
