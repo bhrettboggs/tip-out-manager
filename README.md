@@ -1,6 +1,6 @@
 # Tip-Out Manager
 
-A small web app that calculates end-of-shift tip-outs for restaurant servers. Each restaurant sets its own tip-out percentages. The app then works out what each server owes the bar and the service assistants, and keeps a daily record of every tip-out.
+A web app that calculates end-of-shift tip-outs for restaurant servers and tracks the staff and schedules behind them. Each restaurant defines its own tip-out positions (bar, server assistants, food runners, and so on), each with its own percentage. The app works out what every server owes each position and keeps a dated record of every tip-out.
 
 It can pull each server's alcohol and food sales from the Toast POS API. If Toast isn't connected, a manager types the sales in by hand.
 
@@ -8,33 +8,36 @@ Built with **FastAPI**, **SQLAlchemy**, and **SQLite**. The pages are server-ren
 
 ## How the tip-out is calculated
 
-Each restaurant stores two percentages:
+Each restaurant sets up any number of **tip positions**. Every position has a percentage and a calculation base:
 
-| Setting | Applied to |
+| Calculation base | Applied to |
 |---|---|
-| Bartender % | The server's total **alcohol** sales |
-| Assistant % | The server's **food** sales during the shift |
+| Food Sales | The server's food sales during the shift |
+| Alcohol Sales | The server's alcohol sales |
+| Total Sales | Food + alcohol |
 
-For each server and each shift:
+For each server, each shift, and each active position:
 
 ```
-bartender_tipout     = alcohol_sales × bartender%
-assistant_pool       = food_sales × assistant%
-assistant_per_person = assistant_pool ÷ number_of_assistants
-total_tipout         = bartender_tipout + assistant_per_person
-server_keeps         = server_tips − total_tipout
+position_total = base_amount × position%
+per_person     = position_total ÷ number_of_staff_in_that_position
+server_keeps   = server_tips − sum of all position_totals
 ```
+
+A position with zero staff on shift is skipped.
 
 ## Features
 
-- **Restaurant accounts.** Register a restaurant with its tip-out percentages, server roster, and optional Toast API credentials.
-- **Daily status dashboard.** Shows every server's status for today (done, still working, or not on shift) with a progress bar and running bartender and assistant totals.
-- **Toast integration.** Fills in each server's sales and shift times from Toast, and uses Toast to see who's working today.
+- **Custom tip positions.** Add or remove positions and their percentages per restaurant.
+- **Employee management.** Employee records with roles (server, tip recipient, manager), activation and deactivation.
+- **Scheduling.** Daily and weekly schedules, plus bulk scheduling.
+- **Daily status dashboard.** Shows which servers are done, still working, or off today, with running totals.
+- **Quick tip-out.** Run tip-outs for one server or for everyone on shift at once, plus a shift summary.
+- **Toast integration.** Fills in each server's sales and shift times from Toast.
 - **Manual entry fallback.** If Toast is down or not set up, the same form takes sales numbers by hand.
-- **Duplicate protection.** Re-running a tip-out for the same server and date warns you, then updates the record instead of creating a second one.
-- **Daily totals.** A summary of all tip-outs for any date.
-- **Edit and delete.** Fix or remove a tip-out after it's saved. Deleting asks for confirmation.
-- **Settings.** Change percentages, the server list, or Toast credentials at any time.
+- **Reports.** Weekly reports, trend analysis and performance reports.
+- **Payroll export.** Export tip-out data as CSV for payroll.
+- **Delete.** Remove a tip-out after it's saved.
 
 ## Project structure
 
@@ -42,10 +45,12 @@ server_keeps         = server_tips − total_tipout
 toast_project/
 ├── main.py               # The app: models, Toast client, routes, and HTML/CSS
 ├── mock_toast_server.py  # Fake Toast API on port 8001 for local testing
-├── reset_database.py     # Deletes and recreates tipout_management.db
+├── installer.py          # Optional setup: installs dependencies, creates .env and folders
+├── fix_database.py       # One-off migration for databases created before server_employee_id existed
 ├── debug_database.py     # Prints the tables and rows in the database
-├── simple_app.py         # Earlier stripped-down version (no Toast, fresh DB each run)
-├── test_app.py           # Minimal FastAPI page used to debug setup issues
+├── setup.py              # Package metadata
+├── start_unix.sh         # Start script for Mac/Linux
+├── start_windows.bat     # Start script for Windows
 └── requirements.txt      # Python dependencies
 ```
 
@@ -57,19 +62,14 @@ Requires Python 3.10+.
 git clone https://github.com/bhrettboggs/tip-out-manager.git
 cd tip-out-manager/toast_project
 pip install -r requirements.txt
-```
-
-Start the app:
-
-```bash
 python main.py
 ```
 
-Then open **http://localhost:8080**. The SQLite database (`tipout_management.db`) is created the first time the app runs.
+Then open **http://localhost:8080**. The SQLite database (`tipout_management.db`) is created the first time the app runs. On Windows you can double-click `start_windows.bat`; on Mac/Linux run `./start_unix.sh`.
 
 ### Trying it with the mock Toast server
 
-`main.py` currently points its Toast client at `http://localhost:8001`, the mock server, rather than the real Toast API. To test the Toast flow:
+`main.py` points its Toast client at `http://localhost:8001`, the mock server, rather than the real Toast API. To test the Toast flow:
 
 1. In a second terminal, run `python mock_toast_server.py`.
 2. Register a restaurant named **My Test Restaurant**. Enter any value for the Toast client ID and secret, and enter `My Test Restaurant` as the restaurant GUID.
@@ -81,17 +81,18 @@ Then open **http://localhost:8080**. The SQLite database (`tipout_management.db`
 | URL | What it shows |
 |---|---|
 | `/` | Home: log in or register a restaurant |
-| `/debug` | JSON health check with restaurant and tip-out counts |
+| `/debug` | JSON health check with restaurant, position and tip-out counts |
 | `/docs` | FastAPI's auto-generated API docs |
 
 ## Known limitations
 
-This is a class and personal project, not production software.
+This is a personal project, not production software.
 
 - **No real authentication.** Logging in only requires the restaurant name.
 - **Toast credentials are stored in plain text** in the SQLite database.
 - **The Toast base URL is hard-coded** to the mock server. Connecting to the real Toast API means changing `base_url` in the `ToastAPI` class.
-- The daily status dashboard always shows **today's** date.
+- **Employee contact details and wage rates are stored unencrypted.** Don't deploy this with real staff data on a shared machine.
+- `main.py` is a single ~7,400-line file; splitting routes, models and templates into modules is the obvious next refactor.
 
 ## License
 
