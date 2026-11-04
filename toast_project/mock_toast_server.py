@@ -9,7 +9,7 @@ app = FastAPI(title="Mock Toast API Server")
 # Hardcoded mock data for "My Test Restaurant" on 2025-09-22
 MOCK_RESTAURANT_DATA = {
     "my test restaurant": {
-        "2025-09-22": {
+        "2025-09-26": {
             "Alice": {
                 "beer_sales": 120.00,
                 "beer_count": 20,
