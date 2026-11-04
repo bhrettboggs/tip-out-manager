@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Local SQLite database (created on first run)
+*.db
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

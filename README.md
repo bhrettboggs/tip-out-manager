@@ -45,7 +45,8 @@ toast_project/
 ├── reset_database.py     # Deletes and recreates tipout_management.db
 ├── debug_database.py     # Prints the tables and rows in the database
 ├── simple_app.py         # Earlier stripped-down version (no Toast, fresh DB each run)
-└── test_app.py           # Minimal FastAPI page used to debug setup issues
+├── test_app.py           # Minimal FastAPI page used to debug setup issues
+└── requirements.txt      # Python dependencies
 ```
 
 ## Getting started
@@ -55,7 +56,7 @@ Requires Python 3.10+.
 ```bash
 git clone https://github.com/bhrettboggs/tip-out-manager.git
 cd tip-out-manager/toast_project
-pip install fastapi uvicorn sqlalchemy httpx python-multipart
+pip install -r requirements.txt
 ```
 
 Start the app:
